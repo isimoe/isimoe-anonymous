@@ -1,0 +1,17 @@
+data/
+logs/
+outputs/
+saves/
+__pycache__/
+*.py[cod]
+*.pth
+*.pt
+*.ckpt
+.idea/
+.vscode/
+.DS_Store
+.venv/
+venv/
+.env
+website/
+.artifact-backup/

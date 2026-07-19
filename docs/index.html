@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Anonymous code and reproducibility artifact for ISI-MoE.">
+  <title>ISI-MoE | Anonymous Review Artifact</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="#top" aria-label="ISI-MoE home"><span class="logo">IS</span><strong>ISI-MoE</strong></a>
+    <nav aria-label="Primary navigation">
+      <a href="#overview">Overview</a>
+      <a href="#method">Method</a>
+      <a href="#data">Data</a>
+      <a href="#reproduce">Reproduce</a>
+    </nav>
+    <a class="small-button" href="./isimoe-anonymous-artifact.zip">Download code</a>
+  </header>
+
+  <main id="top">
+    <section class="hero" id="overview">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> Anonymous review artifact · v1.0</p>
+        <h1>Interaction-aware experts for <em>heterogeneous multimodal evidence.</em></h1>
+        <p class="lede">ISI-MoE combines adaptive sparse cross-modal interaction, modality-specialized experts and sample-wise routing to learn from diverse and incomplete inputs.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="./isimoe-anonymous-artifact.zip">Download anonymous artifact <b>↓</b></a>
+          <a class="button ghost" href="#reproduce">Reproduce a run <b>→</b></a>
+        </div>
+        <p class="privacy-note">No author names, affiliations, analytics or identity-bearing repository links are included.</p>
+      </div>
+
+      <div class="pipeline" aria-label="ISI-MoE method overview">
+        <p class="pipeline-label">Method at a glance</p>
+        <div class="modalities"><span>Modality A</span><span>Modality B</span><span>Modality N</span></div>
+        <div class="down">↓</div>
+        <div class="interaction"><small>ADAPTIVE INTERACTION</small><strong>Sparse delta cross-attention</strong><div class="tokens"><i></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i></div></div>
+        <div class="down">↓</div>
+        <div class="experts"><div><b>A</b><span>Specialist</span></div><div><b>B</b><span>Specialist</span></div><div class="shared"><b>S</b><span>Shared</span></div></div>
+        <div class="router"><i></i><span>sample-wise routing</span><i></i></div>
+        <div class="output">Multimodal prediction <b>→</b></div>
+      </div>
+    </section>
+
+    <section class="architecture-section" aria-labelledby="architecture-title">
+      <div><p class="kicker">Complete architecture</p><h2 id="architecture-title">ISI-MoE network structure</h2></div>
+      <figure><img src="./assets/ISI-MoE.png" alt="Complete ISI-MoE architecture showing modality encoders, cross-attention, delta gates, interaction experts, routing weights and final prediction."><figcaption>Adaptive interaction features feed modality-specific and synergistic experts; learned interaction weights aggregate their predictions.</figcaption></figure>
+    </section>
+
+    <section class="stats" aria-label="Artifact summary">
+      <div><strong>4</strong><span>benchmarks</span></div>
+      <div><strong>4</strong><span>fusion backbones</span></div>
+      <div><strong>3</strong><span>task formulations</span></div>
+      <div><strong>0</strong><span>identity links</span></div>
+    </section>
+
+    <section class="section" id="method">
+      <p class="kicker">01 · Method</p>
+      <div class="section-intro"><h2>Interaction signals shape features and experts.</h2><p>The implementation separates cross-modal evidence discovery from expert prediction while keeping the pipeline end-to-end trainable.</p></div>
+      <div class="features">
+        <article><span>A</span><h3>Adaptive sparse interaction</h3><p>Cross-attention retains a modality-specific subset of context tokens, then injects cross-modal residual evidence.</p></article>
+        <article><span>B</span><h3>Specialized + shared experts</h3><p>Specialists model modality-dependent evidence while a shared expert preserves information useful across inputs.</p></article>
+        <article><span>C</span><h3>Sample-wise routing</h3><p>A learned reweighting network blends predictions per example as evidence quality and availability change.</p></article>
+      </div>
+      <div class="objective"><span>Training objective</span><code>task + interaction + gate + auxiliary + orthogonality</code><small>Terms are enabled and weighted by the reference recipes.</small></div>
+    </section>
+
+    <section class="section dark" id="data">
+      <p class="kicker lime">02 · Evaluation surface</p>
+      <div class="section-intro light"><h2>Four heterogeneous multimodal benchmarks.</h2><p>Loaders and commands are included. Raw data governed by licenses or data-use agreements must be obtained from the original provider.</p></div>
+      <div class="datasets">
+        <article><span>01</span><div><h3>ADNI</h3><p>Imaging · Genomics · Clinical · Biospecimen</p></div><b>3-class classification</b></article>
+        <article><span>02</span><div><h3>CMU-MOSI</h3><p>Text · Vision · Audio</p></div><b>Classification &amp; regression</b></article>
+        <article><span>03</span><div><h3>MM-IMDb</h3><p>Language · Image</p></div><b>Multi-label classification</b></article>
+        <article><span>04</span><div><h3>Enrico</h3><p>Screenshot · Wireframe</p></div><b>20-class classification</b></article>
+      </div>
+    </section>
+
+    <section class="section" id="reproduce">
+      <p class="kicker">03 · Reproduce</p>
+      <div class="section-intro"><h2>From download to a reference run.</h2><p>The archive contains the environment, data tree, source code, launchers and review checklist. Run all commands from the repository root.</p></div>
+      <div class="repro-grid">
+        <ol class="steps">
+          <li><span>01</span><div><h3>Create the environment</h3><p>Install the pinned packages in a clean Python 3.10 environment.</p></div></li>
+          <li><span>02</span><div><h3>Place licensed data</h3><p>Follow the documented tree; restricted records are not redistributed.</p></div></li>
+          <li><span>03</span><div><h3>Run a reference recipe</h3><p>Start with non-sparse Transformer fusion before a full sweep.</p></div></li>
+          <li><span>04</span><div><h3>Inspect outputs</h3><p>Review metrics, routing weights, checkpoints and MIR trajectories.</p></div></li>
+        </ol>
+        <div class="terminal">
+          <div class="terminal-head"><i></i><i></i><i></i><span>reference run</span></div>
+          <pre><code>unzip isimoe-anonymous-artifact.zip
+cd isimoe-anonymous-artifact
+
+conda create -n isimoe python=3.10 -y
+conda activate isimoe
+pip install -r requirements.txt
+
+python src/isimoe/train_transformer.py \
+  --data mosi \
+  --modality TVA \
+  --fusion_sparse False \
+  --amss_enabled True \
+  --seed 0</code></pre>
+          <p>See <code>REPRODUCIBILITY.md</code> for all required files and commands.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section review">
+      <p class="kicker">04 · Double-blind readiness</p>
+      <div class="review-grid">
+        <div><h2>Built for anonymous supplemental review.</h2><p>The website is a navigation layer for code already available in the artifact. It does not rely on a future post-acceptance release.</p></div>
+        <div class="checks">
+          <article><span>✓</span><p><strong>Identity scrubbed</strong>Names, affiliations, emails, personal paths and analytics are absent.</p></article>
+          <article><span>✓</span><p><strong>Code available now</strong>The archive contains the implementation and reference scripts.</p></article>
+          <article><span>✓</span><p><strong>Reproduction documented</strong>Environment, data tree, seeds, commands and outputs are described.</p></article>
+          <article><span>✓</span><p><strong>Data constraints explicit</strong>Restricted data are not redistributed; required files are listed.</p></article>
+        </div>
+      </div>
+      <aside><strong>Before submission</strong><p>Use a clean anonymous GitHub account and repository history. Inspect the final PDF, supplementary archive and all media metadata separately.</p></aside>
+    </section>
+  </main>
+
+  <footer><div><span class="logo">IS</span><strong>ISI-MoE</strong></div><p>Anonymous research artifact · Double-blind peer review</p><a href="#top">Back to top ↑</a></footer>
+</body>
+</html>
