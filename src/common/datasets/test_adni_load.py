@@ -3,16 +3,16 @@ import numpy as np
 from adni import load_and_preprocess_data_adni
 
 
-# 1. 模拟 argparse 对象，设置必要的参数
+# Provide the minimal arguments required by the ADNI loader.
 class Args:
     def __init__(self):
-        self.modality = "I"  # 只测试图像模态 (Image)
+        self.modality = "I"  # Test the image modality only.
         self.initial_filling = "mean"
-        self.patch = False  # 测试 MLP 模式
+        self.patch = False  # Exercise the MLP path.
         self.hidden_dim = 128
         self.num_layers_enc = 2
         self.device = torch.device("cpu")
-        self.num_patches = 16  # 如果 patch 为 True 时使用
+        self.num_patches = 16  # Used when patch mode is enabled.
 
 
 def test_loading():
@@ -38,29 +38,29 @@ def test_loading():
 
         print("\n--- 加载成功！数据概览 ---")
 
-        # 2. 检查图像特征维度
+        # Validate image feature dimensions.
         if "image" in data_dict:
             img_data = data_dict["image"]
             print(f"图像特征矩阵形状: {img_data.shape} (总人数 x 特征数)")
             print(f"每个样本的特征维度: {input_dims['image']}")
 
-            # 检查是否有实际数据被填入（非 -2 的行）
+            # Confirm that at least one row contains observed data.
             real_data_count = np.sum(img_data[:, 0] != -2)
             print(f"拥有图像模态数据的样本数: {real_data_count}")
 
-            # 检查数据范围（应该是 MinMaxScaler 处理后的 -1 到 1）
+            # Inspect the expected min-max scaled range.
             valid_vals = img_data[img_data[:, 0] != -2]
             print(f"特征数值范围: [{valid_vals.min():.2f}, {valid_vals.max():.2f}]")
 
-        # 3. 检查划分情况
+        # Inspect dataset split sizes.
         print(f"\n训练集样本数: {len(train_idxs)}")
         print(f"验证集样本数: {len(valid_idxs)}")
         print(f"测试集样本数: {len(test_idxs)}")
 
-        # 4. 检查编码器
+        # Inspect the configured encoder.
         print(f"\n图像编码器结构:\n{encoder_dict['image']}")
 
-        # 5. 验证标签
+        # Validate labels.
         print(f"分类类别数: {n_labels}")
         print(f"标签前 10 个值: {labels[:10]}")
 

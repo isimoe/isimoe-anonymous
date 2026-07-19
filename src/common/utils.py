@@ -70,7 +70,7 @@ def set_size(w, h, ax=None):
 
 
 def get_modality_combinations(modalities):
-    # full modality index is 0.  生成所有模态的组合，并且变为字典映射到index
+    # Reserve index 0 for the full set, then map every modality subset to an index.
     all_combinations = []
     for i in range(len(modalities), 0, -1):
         comb = list(combinations(modalities, i))
@@ -106,10 +106,10 @@ def seed_everything(seed=0):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
 
-    # # 禁用 Benchmark（它会为了快而动态选择算法，导致不一致）
+    # Disable benchmark mode to avoid nondeterministic algorithm selection.
     # torch.backends.cudnn.benchmark = False
     #
-    # # 强制 CuDNN 使用确定性算法
+    # Force deterministic cuDNN algorithms.
     # torch.backends.cudnn.deterministic = True
     #
     # torch.use_deterministic_algorithms(True)

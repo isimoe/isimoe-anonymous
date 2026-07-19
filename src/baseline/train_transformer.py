@@ -533,7 +533,7 @@ def train_and_evaluate(args, seed):
         all_labels = np.array(all_labels) > 0
         test_acc = accuracy_score(all_binary_preds, all_labels)
         test_mae = mean_absolute_error(all_preds, all_labels)
-        # ======== 新增保存逻辑 (回归任务) ========
+        # Save regression results.
         now = datetime.now()
         save_dir = Path(f"./outputs/baseline/transformer/{args.data}_{now.strftime('%Y-%m-%d_%H:%M:%S')}")
         save_dir.mkdir(exist_ok=True, parents=True)
@@ -559,7 +559,7 @@ def train_and_evaluate(args, seed):
             test_auc = 0
         elif args.data == "adni":
             test_auc = roc_auc_score(all_labels, all_probs, multi_class="ovr")
-        # ======== 新增保存逻辑 (分类任务) ========
+        # Save classification results.
         now = datetime.now()
         save_dir = Path(f"./outputs/baseline/transformer/{args.data}_{now.strftime('%Y-%m-%d_%H:%M:%S')}")
         save_dir.mkdir(exist_ok=True, parents=True)
@@ -618,18 +618,18 @@ def main():
     # if False:
     if args.data == "mosi_regression":
         val_losses = []
-        val_accs = []  # 新增：用于收集 best_val_acc
+        val_accs = []  # Collect validation accuracy across runs.
         test_accs = []
-        test_maes = []  # 新增：用于收集 test_mae
+        test_maes = []  # Collect test MAE across runs.
 
         for seed in seeds:
-            # ✅ 正确接收所有四个返回值
+            # Collect all metrics returned by one run.
             best_val_loss, best_val_acc, test_acc, test_mae = train_and_evaluate(args, seed)
 
             val_losses.append(best_val_loss)
-            val_accs.append(best_val_acc)  # 收集 Val Acc
+            val_accs.append(best_val_acc)  # Store validation accuracy.
             test_accs.append(test_acc)
-            test_maes.append(test_mae)  # ✅ 收集 Test MAE
+            test_maes.append(test_mae)  # Store test MAE.
 
         val_loss_mean = np.mean(val_losses)
         val_loss_std = np.std(val_losses)
@@ -638,16 +638,16 @@ def main():
 
         test_acc_mean = np.mean(test_accs) * 100
         test_acc_std = np.std(test_accs) * 100
-        test_mae_mean = np.mean(test_maes)  # MAE 是损失，不需要乘 100
+        test_mae_mean = np.mean(test_maes)  # Keep MAE on its original scale.
         test_mae_std = np.std(test_maes)
 
         log_summary += f"Val loss: {val_loss_mean:.2f} ± {val_loss_std:.2f} "
-        log_summary += f"Val Acc: {val_acc_mean:.2f} ± {val_acc_std:.2f} / "  # 新增 Val Acc
+        log_summary += f"Val Acc: {val_acc_mean:.2f} ± {val_acc_std:.2f} / "  # Report validation accuracy.
         log_summary += f"Test Acc: {test_acc_mean:.2f} ± {test_acc_std:.2f} "
-        log_summary += f"Test MAE: {test_mae_mean:.4f} ± {test_mae_std:.4f}"  # 新增 Test MAE
+        log_summary += f"Test MAE: {test_mae_mean:.4f} ± {test_mae_std:.4f}"  # Report test MAE.
         logger.info(log_summary)
 
-        # 打印结果，方便查看
+        # Print the aggregate summary.
         print(f"Val Loss: {val_loss_mean:.2f} ± {val_loss_std:.2f} / Val Acc: {val_acc_mean:.2f} ± {val_acc_std:.2f}")
         print(
             f"Test Acc: {test_acc_mean:.2f} ± {test_acc_std:.2f} / Test MAE: {test_mae_mean:.4f} ± {test_mae_std:.4f}")

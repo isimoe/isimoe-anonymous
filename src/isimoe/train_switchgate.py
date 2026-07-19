@@ -18,73 +18,73 @@ from src.isimoe.isimoe_train import train_and_evaluate_isimoe as train_and_evalu
 from src.common.utils import setup_logger, str2bool
 
 
-# 解析输入参数
+# Parse command-line arguments.
 def parse_args():
     parser = argparse.ArgumentParser(description="ISI-MoE SwitchGate 训练")
     parser.add_argument("--data", type=str, default="mmimdb")
     parser.add_argument(
         "--modality", type=str, default="LI"
-    )  # ADNI 使用 I/G/C/B，CMU-MOSI 使用 T/V/A
-    parser.add_argument("--initial_filling", type=str, default="mean")  # 缺失模态的初始填充方式
+    )  # ADNI uses I/G/C/B; CMU-MOSI uses T/V/A.
+    parser.add_argument("--initial_filling", type=str, default="mean")  # Impute missing modalities.
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--n_runs", type=int, default=1)
     parser.add_argument(
         "--num_workers", type=int, default=4
-    )  # DataLoader 工作进程数
+    )  # DataLoader worker count.
     parser.add_argument(
         "--pin_memory", type=str2bool, default=True
-    )  # 是否在 DataLoader 中启用内存锁页
+    )  # Enable pinned DataLoader memory.
     parser.add_argument(
         "--use_common_ids", type=str2bool, default=True
-    )  # 是否在不同模态间使用共同样本 ID
+    )  # Restrict modalities to shared sample IDs.
     parser.add_argument(
         "--save", type=str2bool, default=True
-    )  # 是否保存模型和结果
+    )  # Save model checkpoints and results.
     parser.add_argument(
         "--debug", type=str2bool, default=False
-    )  # 是否启用调试模式
+    )  # Enable debug mode.
 
     parser.add_argument("--train_epochs", type=int, default=40)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument(
         "--temperature_rw", type=float, default=1.5
-    )  # 重加权模型的温度系数
+    )  # Reweighting temperature.
     parser.add_argument(
         "--hidden_dim_rw", type=int, default=256
-    )  # 重加权模型的隐藏维度
+    )  # Reweighting hidden dimension.
     parser.add_argument(
         "--num_layer_rw", type=int, default=2
-    )  # 重加权模型的层数
+    )  # Reweighting layer count.
     parser.add_argument("--interaction_loss_weight", type=float, default=0.5)
 
     parser.add_argument("--hidden_dim", type=int, default=128)
     parser.add_argument(
         "--num_layers_enc", type=int, default=2
-    )  # 编码器的 MLP 层数
+    )  # Encoder MLP depth.
     parser.add_argument(
         "--num_layers_fus", type=int, default=2
-    )  # 融合模型的 MLP 层数
+    )  # Fusion MLP depth.
     parser.add_argument(
         "--num_layers_pred", type=int, default=2
-    )  # 预测头的 MLP 层数
-    parser.add_argument("--num_heads", type=int, default=4)  # 注意力头数
+    )  # Prediction-head MLP depth.
+    parser.add_argument("--num_heads", type=int, default=4)  # Attention head count.
     parser.add_argument(
         "--patch", type=str2bool, default=True
-    )  # 是否对输入进行分块
+    )  # Split inputs into patches.
     parser.add_argument(
         "--num_patches", type=int, default=4
-    )  # 输入分块数量
+    )  # Number of input patches.
 
     parser.add_argument(
         "--fusion_sparse", type=str2bool, default=True
-    )  # 是否在融合层中使用稀疏 MoE
+    )  # Enable sparse MoE fusion.
     parser.add_argument("--gate", type=str, default="SwitchGate")
-    parser.add_argument("--num_experts", type=int, default=16)  # 专家数量
-    parser.add_argument("--num_routers", type=int, default=1)  # 路由器数量
-    parser.add_argument("--top_k", type=int, default=1)  # 每个路由器选择的专家数量
-    parser.add_argument("--dropout", type=float, default=0.5)  # 丢弃率
+    parser.add_argument("--num_experts", type=int, default=16)  # Expert count.
+    parser.add_argument("--num_routers", type=int, default=1)  # Router count.
+    parser.add_argument("--top_k", type=int, default=1)  # Experts selected per router.
+    parser.add_argument("--dropout", type=float, default=0.5)  # Dropout rate.
     parser.add_argument("--gate_loss_weight", type=float, default=1e-2)
 
     return parser.parse_known_args()
@@ -151,12 +151,12 @@ def main():
         test_f1s = []
         test_f1_micros = []
         test_aucs = []
-    ############ 效率统计
+    # Measure training efficiency.
     train_times = []
     infer_times = []
     flops = []
     params = []
-    ############ 效率统计
+    # Measure training efficiency.
     if len(seeds) == 1:
         fusion_model = Transformer(
             num_modalities,
@@ -210,12 +210,12 @@ def main():
             test_f1s.append(test_f1)
             test_f1_micros.append(test_f1_micro)
             test_aucs.append(test_auc)
-        ############ 效率统计
+        # Measure epoch efficiency.
         train_times.append(train_time)
         infer_times.append(infer_time)
         flops.append(flop)
         params.append(param)
-        ############ 效率统计
+        # Measure epoch efficiency.
     else:
         for seed in seeds:
             fusion_model = Transformer(
@@ -273,13 +273,13 @@ def main():
                 test_f1s.append(test_f1)
                 test_f1_micros.append(test_f1_micro)
                 test_aucs.append(test_auc)
-            ############ 效率统计
+            # Measure evaluation efficiency.
             train_times.append(train_time)
             infer_times.append(infer_time)
             flops.append(flop)
             params.append(param)
-            ############ 效率统计
-    ############ 效率统计
+            # Measure evaluation efficiency.
+    # Summarize efficiency metrics.
     mean_train_time = np.mean(train_times)
     variance_train_time = np.var(train_times)
     mean_infer_time = np.mean(infer_times)
@@ -306,7 +306,7 @@ def main():
     log_summary += "\n"
     log_summary += f"param: {mean_param:,.0f} ± {variance_param:,.0f} "
     log_summary += "\n"
-    ############ 效率统计
+    # Summarize efficiency metrics.
     if args.data == "mosi_regression":
         val_avg_acc = np.mean(val_accs) * 100
         val_std_acc = np.std(val_accs) * 100

@@ -16,7 +16,7 @@ from src.common.utils import get_modality_combinations
 
 
 def load_and_preprocess_data_mmimdb(args):
-    data_dir = "data/mm-imdb"  #自己修改
+    data_dir = "data/mm-imdb"  # Adjust for a custom dataset location.
     # data_dir = "../../data/mm-imdb"
     hdf5_file = os.path.join(data_dir, "multimodal_imdb.hdf5")
     dataset = h5py.File(hdf5_file, "r")
@@ -96,7 +96,7 @@ def load_and_preprocess_data_mmimdb(args):
                     512, num_patches=args.num_patches, embed_dim=args.hidden_dim
                 ).to(args.device),
             )
-            input_dims["language"] = 512    ###？？？
+            input_dims["language"] = 512  # Patch embedding dimension.
             input_dims["img"] = 512
         else:
             encoder_dict["language"] = MaxOut_MLP(
@@ -109,7 +109,7 @@ def load_and_preprocess_data_mmimdb(args):
             input_dims["img"] = 4096
 
     combination_to_index = get_modality_combinations(
-        args.modality   #所有模态的组合
+        args.modality   # Enumerate all modality combinations.
     )  # 0: full modality index
     modality_combinations = [
         "".join(sorted(set(comb))) for comb in modality_combinations
@@ -128,7 +128,7 @@ def load_and_preprocess_data_mmimdb(args):
     def all_modalities_missing(idx):
         return data_dict["modality_comb"][idx] == -1
 
-    train_idxs = [idx for idx in train_idxs if not all_modalities_missing(idx)]  #筛选要求，每个样本必须含有所有模态
+    train_idxs = [idx for idx in train_idxs if not all_modalities_missing(idx)]  # Drop samples with every modality missing.
     valid_idxs = [idx for idx in valid_idxs if not all_modalities_missing(idx)]
     test_idxs = [idx for idx in test_idxs if not all_modalities_missing(idx)]
 
@@ -143,7 +143,7 @@ def load_and_preprocess_data_mmimdb(args):
 
     test_idx_to_mmimdb_ids = {idx: idx_to_id[idx] for idx in test_idxs}
     # Save to a file
-    with open("outputs/test_idx_to_mmimdb_ids.json", "w") as f:  #自己修改
+    with open("outputs/test_idx_to_mmimdb_ids.json", "w") as f:  # Adjust for a custom output location.
     # with open("../../outputs/test_idx_to_mmimdb_ids.json", "w") as f:
         json.dump(test_idx_to_mmimdb_ids, f)
 

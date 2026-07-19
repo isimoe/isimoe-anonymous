@@ -743,16 +743,14 @@ class AttentionBRFF(nn.Module):
         self.attn = nn.MultiheadAttention(embed_dim=dim, num_heads=num_heads, dropout=dropout, batch_first=True)
         self.norm = nn.LayerNorm(dim)
     def forward(self, query, context):
-        # query: [B, D] or [B, T, D] -> 需要 unsqueeze 处理非序列输入
+        # Add a sequence axis when the query has shape [batch, dim].
         if query.dim() == 2:
             query = query.unsqueeze(1) # [B, 1, D]
         if context.dim() == 2:
             context = context.unsqueeze(1) # [B, 1, D]
         # Cross Attention: Q=Query, K=Context, V=Context
         attn_out, _ = self.attn(query, context, context)
-        # 残差连接通常指 (Original + Attention)，但在M2-AMSS文档描述中，
-        # 似乎是将 Attention 的结果作为残差特征拼接到原始特征旁。
-        # 此处返回 attn_out (即 F_{v->a})
+        # Return the attended cross-modal feature for downstream fusion.
         return attn_out.squeeze(1)
 
 # class WeightedAverageMLP(nn.Module):

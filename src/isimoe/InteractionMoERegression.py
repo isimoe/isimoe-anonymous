@@ -147,7 +147,7 @@ class InteractionExpert(nn.Module):
         return outputs
 
 
-# ===================== 核心交互模块 =====================
+# Sparse cross-modal interaction
 class AMSSControlledSparseDeltaCrossAttention(nn.Module):
     def __init__(self,
                  num_modalities,
@@ -204,7 +204,7 @@ class AMSSControlledSparseDeltaCrossAttention(nn.Module):
         assert len(inputs) == self.num_modalities
         device = inputs[0].device
 
-        # 1. 获取上一批的rho，计算Top-k比例
+        # Derive token budgets from the previous batch's ratios.
         topk_ratios = self.get_topk_ratio_per_modality()
         topk_ratios_normalized = torch.softmax(topk_ratios / 0.1, dim=0)
 
@@ -293,7 +293,7 @@ class AMSSControlledSparseDeltaCrossAttention(nn.Module):
         self.u_mom.mul_(self.amss_momentum).add_((1.0 - self.amss_momentum) * current_val)
 
 
-# ===================== 核心整合：SpecializedInteractionMoERegression =====================
+# Specialized interaction mixture of experts for regression
 class SpecializedInteractionMoERegression(nn.Module):
     def __init__(
             self,
@@ -310,7 +310,7 @@ class SpecializedInteractionMoERegression(nn.Module):
             amss_momentum=0.9,
             scale_factor=1.0,
             use_interaction=True,
-            # 新增交互模块参数
+            # Sparse interaction settings.
             delta_attn_num_heads=4,
             delta_attn_dropout=0.1,
             use_proj_q=True,
@@ -327,7 +327,7 @@ class SpecializedInteractionMoERegression(nn.Module):
 
         self.register_buffer("u_mom", torch.zeros(num_modalities + 1))
 
-        # 核心替换：使用新的交互模块
+        # Enhance each modality with sparse cross-modal context.
         if self.use_interaction:
             self.interaction_module = AMSSControlledSparseDeltaCrossAttention(
                 num_modalities=num_modalities,
@@ -342,7 +342,7 @@ class SpecializedInteractionMoERegression(nn.Module):
         else:
             self.interaction_module = None
 
-        # 门控网络
+        # Gate expert contributions.
         num_branches = num_modalities + 1
         self.reweight = MLPReWeighting(
             num_modalities,
@@ -353,7 +353,7 @@ class SpecializedInteractionMoERegression(nn.Module):
             temperature=temperature_rw,
         )
 
-        # 初始化专家
+        # Build unimodal and shared experts.
         self.specialized_experts = nn.ModuleList()
         for _ in range(num_modalities):
             spec_model = deepcopy(fusion_model)
@@ -392,7 +392,7 @@ class SpecializedInteractionMoERegression(nn.Module):
         assert len(inputs) == self.num_modalities
         device = inputs[0].device
 
-        # 1. 获取增强特征（核心：使用新的交互模块）
+        # Compute cross-modally enhanced features.
         enhanced_features = []
         if self.use_interaction and self.interaction_module is not None:
             modal_ratios = None
@@ -402,7 +402,7 @@ class SpecializedInteractionMoERegression(nn.Module):
         else:
             enhanced_features = [torch.zeros_like(x) for x in inputs]
 
-        # 2. 专家前向传播
+        # Run unimodal and shared experts.
         expert_outputs = []
         gate_losses = []
         for i in range(self.num_modalities):
@@ -425,7 +425,7 @@ class SpecializedInteractionMoERegression(nn.Module):
         expert_outputs.append(out_s)
         self.expert_outputs = expert_outputs
 
-        # 3. 融合与输出
+        # Fuse expert predictions.
         interaction_losses = [torch.tensor(0.0, device=device) for _ in range(self.num_modalities + 1)]
         all_preds = torch.stack(expert_outputs, dim=1)
         interaction_weights = self.reweight(inputs)
@@ -458,18 +458,18 @@ class SpecializedInteractionMoERegression(nn.Module):
 
         from src.isimoe.mi_fisher_utils import apply_fisher_freeze, modal_caculate_multi_mi_regression
 
-        # 1. 准备专家预测
+        # Collect expert predictions.
         expert_outputs = self.expert_outputs
         expert_inputs = inputs + [inputs[0]]
 
-        # 2. 计算回归显著性
+        # Estimate regression significance.
         coeffs, ratios = modal_caculate_multi_mi_regression(
             expert_outputs=expert_outputs,
             labels=labels,
             temperature=self.amss_tau
         )
 
-        # 3. 动量更新
+        # Update momentum statistics.
         m = self.amss_momentum
         unique_ratios = ratios[:self.num_modalities]
         shared_ratio = ratios[-1]
@@ -490,7 +490,7 @@ class SpecializedInteractionMoERegression(nn.Module):
         self.u_mom.mul_(m).add_((1.0 - m) * current_val)
         s = torch.softmax(self.u_mom / self.amss_tau, dim=0)
 
-        # 4. 计算rho并更新交互模块缓存
+        # Compute modality ratios and refresh the interaction cache.
         rho_list = []
         stats = {}
         for i in range(self.num_modalities):
@@ -512,13 +512,13 @@ class SpecializedInteractionMoERegression(nn.Module):
             stats[f"ratio_m{i}"] = float(unique_ratios[i])
             stats[f"frozen_m{i}"] = frozen_count
 
-        # ========== 核心修改：更新交互模块的rho缓存 ==========
+        # Cache ratios for the next batch.
         if self.use_interaction and self.interaction_module is not None:
             self.interaction_module.update_rho_cache(rho_list)
             self.interaction_module.update_amss_momentum(unique_ratios, suppress_warning=True)
         # =========================================================
 
-        # 处理共享专家
+        # Update shared-expert statistics.
         idx_shared = self.num_modalities
         rho_shared = float(1.0 - s[idx_shared] * self.scale_factor)
         rho_shared = max(0.1, min(rho_shared, 1.0))

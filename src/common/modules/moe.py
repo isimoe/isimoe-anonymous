@@ -228,7 +228,7 @@ class FMoETransformerMLP(FixedFMoE):
         **kwargs,
     ):
         if type(gate) is str:
-            gate = eval(gate)     #字符串求值
+            gate = eval(gate)     # Resolve the configured gate class.
         super().__init__(
             num_expert=num_expert,
             d_model=d_model,
@@ -448,7 +448,7 @@ class SwitchGate(NaiveGate):
         gate_bias=True,
     ):
         assert topk == 1, "topk should be 1 in switch"
-        # super().__init__(d_model, num_expert, world_size, top_k=1, gate_bias=gate_bias)  自己修改
+        # Legacy initialization retained for reference.
         super().__init__(d_model, num_expert, world_size, top_k=1)
         self.switch_eps = switch_eps
         self.capacity = capacity

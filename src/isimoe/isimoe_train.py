@@ -184,7 +184,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
     print(device)
     num_modalities = len(args.modality)
 
-    # ... [数据加载部分保持不变] ...
+    # Load the selected multimodal dataset.
     if args.data == "adni":
         (
             data_dict,
@@ -320,7 +320,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
             "--enable_r_path is currently implemented for SpecializedInteractionMoE "
             "classification runs only; mosi_regression uses SpecializedInteractionMoERegression."
         )
-    # 可选用基于互信息与 Fisher 重平衡的 AMSS 交互 MoE（仅适用于双模态）
+    # Optionally enable mutual-information and Fisher-based AMSS rebalancing.
     if  args.data != "mosi_regression":
         ensemble_model = SpecializedInteractionMoE(
             num_modalities=num_modalities,
@@ -344,7 +344,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
 
     if args.data == "mosi_regression":
         ensemble_model = SpecializedInteractionMoERegression(
-            num_modalities=num_modalities,  # 传入实际模态数 (例如 3)
+            num_modalities=num_modalities,  # Pass the active modality count.
             fusion_model=deepcopy(fusion_model),
             fusion_sparse=args.fusion_sparse,
             hidden_dim=args.hidden_dim,
@@ -368,7 +368,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
     if args.data in ["adni", "enrico", "mosi", "sarcasm", "humor"]:
         criterion = torch.nn.CrossEntropyLoss()
     elif args.data == "mosi_regression":
-        criterion = torch.nn.SmoothL1Loss()  # 回归任务
+        criterion = torch.nn.SmoothL1Loss()  # Regression objective.
     elif args.data == "mmimdb":
         criterion = torch.nn.BCEWithLogitsLoss()
 
@@ -390,17 +390,17 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
     plotting_interaction_losses[f"syn"] = []
     plotting_interaction_losses[f"red"] = []
 
-    ############ 效率统计
+    # Measure training efficiency.
     train_time = 0
-    ############ 效率统计
+    # Measure training efficiency.
     track_mir_curve = getattr(args, "track_mir_curve", False)
     mir_records = []
     global_step = 0
 
     for epoch in trange(args.train_epochs):
-        ############ 效率统计
+        # Measure epoch efficiency.
         epoch_start_time = time.time()
-        ############ 效率统计
+        # Measure epoch efficiency.
 
         ensemble_model.train()
 
@@ -412,9 +412,9 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
             batch_gate_losses = []
         batch_interaction_losses = []
 
-        # 对于 Specialized 模型，experts 数量 = num_modalities + 1 (shared)
-        # 兼容旧代码的 uniqueness/synergy/redundancy 统计逻辑可能不完全适用，但我们保留以防报错
-        num_interaction_experts = len(args.modality) + 1 + 1  # 预留足够空间
+        # Reserve slots for unimodal, shared, and optional redundancy experts.
+        # Legacy interaction statistics may use fewer slots.
+        num_interaction_experts = len(args.modality) + 1 + 1  # Include one compatibility slot.
         interaction_loss_sums = [0] * (num_interaction_experts + 5)
         minibatch_count = len(train_loader)
 
@@ -446,7 +446,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
 
             interaction_loss = sum(interaction_losses) / max(1, len(interaction_losses))
 
-            # AMSS 辅助监督与正交约束
+            # Track AMSS auxiliary and orthogonality losses.
             amss_aux = 0.0
             amss_orth = 0.0
             ldiv_sources = expert_outputs
@@ -455,22 +455,22 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
                 if cached_features is not None and len(cached_features) >= num_modalities + 1:
                     ldiv_sources = cached_features
 
-            # [关键修改 2]: 通用化 AMSS 损失计算，支持 3 模态 (N 模态)
-            # expert_outputs 结构: [Exp_1, Exp_2, ..., Exp_N, Exp_Shared]
+            # Compute AMSS losses for an arbitrary number of modalities.
+            # Expert order: unimodal experts followed by the shared expert.
             if len(expert_outputs) >= num_modalities + 1:
 
-                # --- 1. 计算 AMSS 辅助损失 (对前 N 个单模态专家) ---
+                # Supervise each unimodal expert.
                 if getattr(args, "amss_aux_weight", 0.0) > 0.0:
-                    aux_criterion = criterion  # 复用主任务的 criterion (Regression用SmoothL1)
+                    aux_criterion = criterion  # Reuse the primary task objective.
 
                     for i in range(num_modalities):
                         raw_logits = expert_outputs[i]
-                        # 兼容性处理：Specialized 模型可能返回 [[tensor]] 结构
+                        # Unwrap nested outputs from specialized experts.
                         if isinstance(raw_logits, (list, tuple)):
                             raw_logits = raw_logits[0]
 
                         if args.data == "mosi_regression":
-                            # Regression 需要 unsqueeze label
+                            # Match the regression target shape.
                             curr_loss = aux_criterion(raw_logits, batch_labels.unsqueeze(1))
                         elif args.data == "mmimdb":
                             curr_loss = aux_criterion(raw_logits, batch_labels.float())
@@ -479,14 +479,14 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
 
                         amss_aux += curr_loss
 
-                # --- 2. 计算正交损失 (Shared Expert 与单模态专家正交) ---
+                # Encourage shared and unimodal expert representations to diverge.
                 if getattr(args, "amss_orth_weight", 0.0) > 0.0:
-                    # 共享专家位于 N 个单模态专家之后；可选的冗余专家 R 位于末尾。
+                    # The shared expert follows the unimodal experts.
                     raw_shared = ldiv_sources[num_modalities]
                     if isinstance(raw_shared, (list, tuple)):
                         raw_shared = raw_shared[0]
 
-                    # 只有当维度合适时才计算 (必须是 [B, D])
+                    # Compute the constraint only for compatible [batch, dim] tensors.
                     if raw_shared is not None and raw_shared.dim() == 2:
                         shared_norm = F.normalize(raw_shared, p=2, dim=1)
                         total_cos = 0.0
@@ -503,7 +503,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
                                 and raw_spec.shape == raw_shared.shape
                             ):
                                 spec_norm = F.normalize(raw_spec, p=2, dim=1)
-                                # 计算 cosine 相似度的绝对值
+                                # Penalize absolute cosine similarity.
                                 cos_sim = torch.sum(torch.abs(torch.sum(spec_norm * shared_norm, dim=1)))
                                 total_cos += cos_sim / (spec_norm.size(0) + 1e-8)
                                 valid_pairs += 1
@@ -524,7 +524,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
             else:
                 loss = task_loss + args.interaction_loss_weight * interaction_loss
 
-            # 按配置加入 AMSS 辅助损失和正交损失
+            # Add configured AMSS auxiliary terms.
             if getattr(args, "amss_aux_weight", 0.0) > 0.0:
                 loss = loss + args.amss_aux_weight * amss_aux
             if getattr(args, "amss_orth_weight", 0.0) > 0.0:
@@ -532,7 +532,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
 
             loss.backward()
 
-            # 启用时，在优化器更新前执行互信息与 Fisher 冻结或 AMSS
+            # Apply MIR/Fisher suppression or AMSS before the optimizer step.
             if getattr(args, "amss_enabled", False) and hasattr(
                     ensemble_model, "apply_mi_fisher_after_backward"):
 
@@ -559,7 +559,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
             if args.fusion_sparse:
                 batch_gate_losses.append(gate_loss.item())
 
-            # 更新 plotting loss (防止 Specialized 模型 loss 个数不匹配报错)
+            # Accumulate plotting losses without assuming a fixed expert count.
             for idx, loss in enumerate(interaction_losses):
                 if idx < len(interaction_loss_sums):
                     interaction_loss_sums[idx] += loss.item()
@@ -567,11 +567,11 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
             if args.data == "enrico":
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
 
-        ############ 效率统计
+        # Measure epoch efficiency.
         epoch_end_time = time.time()
         train_epoch_time = epoch_end_time - epoch_start_time
         train_time += train_epoch_time
-        ############ 效率统计
+        # Measure epoch efficiency.
 
         plotting_total_losses["task"].append(np.mean(batch_task_losses))
         plotting_total_losses["interaction"].append(np.mean(batch_interaction_losses))
@@ -582,7 +582,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
             avg_loss = interaction_loss_sums[i] / minibatch_count
             plotting_interaction_losses[f"uni_{i + 1}"].append(avg_loss)
 
-        # 安全读取协同与冗余交互损失
+        # Read optional synergy and redundancy losses safely.
         if len(interaction_losses) >= 2:
             plotting_interaction_losses["syn"].append(
                 interaction_loss_sums[len(interaction_losses) - 2] / minibatch_count
@@ -652,7 +652,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
                         all_probs.extend(probs)
                         if (
                                 probs.shape[1] != n_labels
-                        ):  # n_labels 表示类别数量
+                        ):  # n_labels is the class count.
                             raise ValueError("Incorrect output shape from the model")
         if args.data == "mosi_regression":
             val_loss = np.mean(val_losses)
@@ -675,7 +675,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
                     modality: deepcopy(encoder.state_dict())
                     for modality, encoder in encoder_dict.items()
                 }
-                # 保存前将模型移到 CPU，仅写入 state_dict
+                # Save a CPU state dictionary.
                 if args.save:
                     best_model_fus_cpu = {k: v.cpu() for k, v in best_model_fus.items()}
                     best_model_enc_cpu = {
@@ -743,7 +743,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
                         modality: deepcopy(encoder.state_dict())
                         for modality, encoder in encoder_dict.items()
                     }
-                    # 保存前将模型移到 CPU，仅写入 state_dict
+                    # Save a CPU state dictionary.
                     if args.save:
                         best_model_fus_cpu = {
                             k: v.cpu() for k, v in best_model_fus.items()
@@ -752,10 +752,10 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
                             modality: {k: v.cpu() for k, v in enc_state.items()}
                             for modality, enc_state in best_model_enc.items()
                         }
-    ############ 效率统计
+    # Summarize efficiency metrics.
     total_param = parameter_count(ensemble_model)[""]
     total_flop = 0
-    ############ 效率统计
+    # Summarize efficiency metrics.
 
     plot_total_loss_curves(
         args,
@@ -777,7 +777,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
         if mir_csv_path is not None:
             print(f"MIR curve values saved to {mir_csv_path}")
             print(f"MIR curve figure saved to {mir_fig_path}")
-    # 保存最佳模型
+    # Save the best checkpoint.
     if args.save:
         Path("./saves").mkdir(exist_ok=True, parents=True)
         Path(f"./saves/isimoe/{fusion}/{args.data}").mkdir(exist_ok=True, parents=True)
@@ -795,7 +795,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
 
         print(f"Best model saved to {save_path}")
 
-    # 加载最佳模型并进行测试集评估
+    # Restore the best checkpoint for test evaluation.
     for modality, encoder in encoder_dict.items():
         encoder.load_state_dict(best_model_enc[modality])
         encoder.eval()
@@ -809,20 +809,19 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
     all_probs = []
     test_losses = []
     all_routing_weights = []
-    num_experts = len(args.modality) + 1  # 对于 Specialized 模型，N+1 个专家
+    num_experts = len(args.modality) + 1  # Unimodal experts plus one shared expert.
 
-    # 兼容性处理：如果用的是普通 InteractionMoE，可能专家数量不一样
-    # 简单起见，动态扩展列表
+    # Expand result containers for models with additional experts.
     all_expert_outputs = [[] for _ in range(num_experts + 5)]
 
-    ############ 效率统计
+    # Measure test efficiency.
     infer_time = 0
-    ############ 效率统计
+    # Measure test efficiency.
 
     with torch.no_grad():
-        ############ 效率统计
+        # Measure batch efficiency.
         epoch_start_time = time.time()
-        ############ 效率统计
+        # Measure batch efficiency.
 
         for (
                 batch_samples,
@@ -848,10 +847,10 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
                 fusion_input
             )
 
-            # 记录 Expert Outputs，注意动态长度
+            # Record a dynamic number of expert outputs.
             for expert_idx in range(len(expert_outputs)):
                 if expert_idx < len(all_expert_outputs):
-                    # 处理可能存在的嵌套 list
+                    # Unwrap nested expert outputs.
                     val = expert_outputs[expert_idx]
                     if isinstance(val, (list, tuple)): val = val[0]
                     all_expert_outputs[expert_idx].extend(
@@ -882,13 +881,13 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
                         torch.nn.functional.softmax(outputs, dim=1).cpu().numpy()
                     )
 
-    ############ 效率统计
+    # Summarize efficiency metrics.
     epoch_end_time = time.time()
     infer_epoch_time = epoch_end_time - epoch_start_time
     infer_time += infer_epoch_time
-    ############ 效率统计
+    # Summarize efficiency metrics.
 
-    # 截断 all_expert_outputs 到实际使用的专家数量，避免可视化空列表报错
+    # Drop unused expert slots before visualization.
     actual_num_experts = len(expert_outputs)
     visualize_expert_logits(
         expert_outputs, routing_weights, outputs, args, framework="isimoe", fusion=fusion
@@ -911,7 +910,7 @@ def train_and_evaluate_isimoe(args, seed, fusion_model, fusion):
             f"./outputs/isimoe/{fusion}/{args.data}_{now.strftime('%Y-%m-%d_%H:%M:%S')}"
         )
         save_dir.mkdir(exist_ok=True, parents=True)
-        # 保存时使用实际长度
+        # Persist only populated expert outputs.
         np.save(save_dir / "all_expert_outputs.npy", np.array(all_expert_outputs[:actual_num_experts]))
         np.save(save_dir / "all_routing_weights.npy", np.array(all_routing_weights))
         np.save(save_dir / "all_preds.npy", np.array(all_preds))
