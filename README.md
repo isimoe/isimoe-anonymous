@@ -9,7 +9,7 @@ Anonymous implementation and review artifact for **ISI-MoE**, an interaction-awa
 
 > **Double-blind review notice.** Author names, affiliations, personal accounts, contact details and identity-bearing links are intentionally omitted. Please do not add a citation or acknowledgements section until the review period has ended.
 
-- Project page: enable GitHub Pages from the [`docs/`](docs/) directory
+- Project page: [https://isimoe.github.io/isimoe-anonymous/](https://isimoe.github.io/isimoe-anonymous/)
 - Reproduction guide: [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
 - Anonymous publishing guide: [`English`](PUBLISHING.md) · [`中文`](PUBLISHING_CN.md)
 - Reference scripts: [`scripts/train_scripts/isimoe/`](scripts/train_scripts/isimoe/)
