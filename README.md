@@ -63,20 +63,6 @@ python src/baseline/train_<fusion>.py --data <dataset> --modality <modalities>
 python src/baseline/train_<fusion>.py --data <dataset> --modality <modalities>
 ```
 
-### Ablations of ISI-MoE
-
-- Supported datasets: `<dataset>` in `adni`, `mmimdb`, `mosi`, `mosi_regression`, `enrico`.
-
-```shell
-python src/ablation/train_latent_contrastive.py --data <dataset>
-python src/ablation/train_less_perturbed_forward.py --data <dataset>
-python src/ablation/train_synergy_redundancy_only.py --data <dataset>
-python src/ablation/train_simple_weighted_average.py --data <dataset>
-python src/ablation/train_no_interaction_loss.py --data <dataset>
-```
-
-Logs, checkpoints and predictions are written under `logs/`, `saves/` and `outputs/`.
-
 ## License
 
 The code is released under the [MIT License](LICENSE).
