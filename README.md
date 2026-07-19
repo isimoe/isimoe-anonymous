@@ -28,19 +28,7 @@ mkdir -p data
 
 ### ADNI
 
-To access the ADNI dataset, please first visit the [ADNI website](https://adni.loni.usc.edu/) and [apply for data access](https://ida.loni.usc.edu/collaboration/access/appApply.jsp?project=ADNI).
-
-Once you obtain access, log in to IDA and download the necessary files for each modality.
-
-**Steps:**
-
-`Search & Download` → `Study Collections` → `Study Files` → `Imaging`
-
-Download **“UCSF - Cross-Sectional FreeSurfer (7.x) [ADNI1, GO, 2, 3, 4]”**.
-
-Further details are available in the [Flex-MoE ADNI preprocessing guide](https://github.com/UNITES-Lab/Flex-MoE/blob/main/data/adni/README.md#1-2-image-mri-preprocessing).
-
-The ISI-MoE training entry point and ADNI data loader support loading preprocessed data. Use the argument `--preprocessed True` for this purpose.
+For ADNI data access and preprocessing, follow the [Flex-MoE ADNI guide](https://github.com/UNITES-Lab/Flex-MoE/blob/main/data/adni/README.md).
 
 ### MM-IMDB, MOSI, and Enrico
 
