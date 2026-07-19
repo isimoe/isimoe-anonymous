@@ -16,28 +16,51 @@ pip install -r requirements.txt
 
 The core Transformer path can run without sparse fusion. FasterMoE is required only when `--fusion_sparse True`; follow its CUDA-specific installation notes for that configuration.
 
-## Data directory
+## Data Directory
 
-Create a `data` directory under the repository root. Raw datasets are not redistributed because their original licenses and, for clinical datasets, data-use agreements continue to apply.
+Create a data directory under `./data`.
 
-```text
-data/
-├── adni/
-│   ├── label.csv
-│   ├── PTID_splits.json
-│   ├── image/
-│   ├── genomic/
-│   ├── clinical/
-│   └── biospecimen/
-├── cmu-mosi/
-│   └── mosi_data.pkl
-├── mm-imdb/
-│   └── multimodal_imdb.hdf5
-└── enrico/
-    ├── design_topics.csv
-    ├── screenshots/
-    └── wireframes/
+在项目根目录下创建 `./data` 数据目录。
+
+```shell
+mkdir -p data
 ```
+
+## Reproduce Experiment Results
+
+### ADNI
+
+To access the ADNI dataset, please first visit the [ADNI website](https://adni.loni.usc.edu/) and [apply for data access](https://ida.loni.usc.edu/collaboration/access/appApply.jsp?project=ADNI).
+
+要访问 ADNI 数据集，请先访问 [ADNI 网站](https://adni.loni.usc.edu/)，并在[此处申请数据访问权限](https://ida.loni.usc.edu/collaboration/access/appApply.jsp?project=ADNI)。
+
+Once you obtain access, log in to IDA and download the necessary files for each modality.
+
+获得访问权限后，请登录 IDA，并下载每种模态所需的文件。
+
+**Steps / 步骤：**
+
+`Search & Download` → `Study Collections` → `Study Files` → `Imaging`
+
+`搜索与下载` → `研究集合` → `研究文件` → `成像`
+
+Download **“UCSF - Cross-Sectional FreeSurfer (7.x) [ADNI1, GO, 2, 3, 4]”**.
+
+下载 **“UCSF - 横断面 FreeSurfer (7.x) [ADNI1, GO, 2, 3, 4]”**。
+
+Further details are available in the [Flex-MoE ADNI preprocessing guide](https://github.com/UNITES-Lab/Flex-MoE/blob/main/data/adni/README.md#1-2-image-mri-preprocessing).
+
+更详细的信息请参阅 [Flex-MoE 的 ADNI 预处理说明](https://github.com/UNITES-Lab/Flex-MoE/blob/main/data/adni/README.md#1-2-image-mri-preprocessing)。
+
+The ISI-MoE training entry point and ADNI data loader support loading preprocessed data. Use the argument `--preprocessed True` for this purpose.
+
+ISI-MoE 的训练入口和 ADNI 数据加载器支持读取预处理数据，可使用参数 `--preprocessed True`。
+
+### MM-IMDB, MOSI, and Enrico
+
+Download MM-IMDB, MOSI, and Enrico using the dataset links provided by [MultiBench](https://arxiv.org/abs/2107.07502). MOSI regression uses the same MOSI data.
+
+请通过 [MultiBench](https://arxiv.org/abs/2107.07502) 提供的数据集链接下载 MM-IMDB、MOSI 和 Enrico；MOSI 回归任务使用相同的 MOSI 数据。
 
 ## Train Models
 
