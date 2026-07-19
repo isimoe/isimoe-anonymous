@@ -50,19 +50,6 @@ data/
 source scripts/train_scripts/isimoe/<fusion>/run_<dataset>.sh
 ```
 
-### Train vanilla fusion models
-
-- Supported fusion methods: `<fusion>` in `transformer`, `interpretcc`, `moepp`, `switchgate`, `ef`, `lf`, `lrtf`.
-- Supported datasets: `<dataset>` in `adni`, `mmimdb`, `mosi`, `mosi_regression`, `enrico`.
-
-```shell
-# For <fusion> in ["transformer", "interpretcc", "moepp", "switchgate"]
-python src/baseline/train_<fusion>.py --data <dataset> --modality <modalities>
-
-# For <fusion> in ["ef", "lf", "lrtf"]
-python src/baseline/train_<fusion>.py --data <dataset> --modality <modalities>
-```
-
 ## License
 
 The code is released under the [MIT License](LICENSE).
