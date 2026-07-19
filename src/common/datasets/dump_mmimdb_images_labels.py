@@ -104,10 +104,7 @@ def dump_mmimdb(
     dump_labels: bool = True,
     dump_sequences_token_ids: bool = True,
 ) -> Dict[str, Any]:
-    """
-    从 HDF5 解析并导出：图片(images)、语言(features+sequences)、标签(genres)。
-    输出目录：output/images/, output/language/, output/labels/
-    """
+    """Export images, language features, token sequences, and labels from HDF5."""
     os.makedirs(output_dir, exist_ok=True)
     images_dir = os.path.join(output_dir, "images")
     language_dir = os.path.join(output_dir, "language")

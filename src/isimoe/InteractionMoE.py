@@ -68,13 +68,7 @@ class AMSSControlledSparseDeltaCrossAttention(nn.Module):
 
     # Cache current ratios for the next batch.
     def update_rho_cache(self, rho_list, ema_coeff=0.1):
-        """
-        由主模型在apply_mi_fisher_after_backward中调用，更新rho缓存
-        Args:
-            rho_list: list/tensor，长度=num_modalities（2个），值范围0.1~1.0
-        """
-
-        """使用EMA，让rho缓存更新更平滑"""
+        """Cache modality ratios with an exponential moving average."""
         if isinstance(rho_list, list):
             rho_tensor = torch.tensor(rho_list, dtype=torch.float32, device=self.cached_rho.device)
         else:
@@ -85,11 +79,11 @@ class AMSSControlledSparseDeltaCrossAttention(nn.Module):
         self.cached_rho = self.cached_rho * ema_coeff + rho_tensor * (1 - ema_coeff)
 
     def get_topk_ratio_per_modality(self):
-        """前向时：直接用缓存的rho（上一批）计算Top-k比例"""
+        """Return cached ratios for the next forward pass."""
         return self.cached_rho.clamp(0.1, 0.9)
 
     def forward(self, inputs, modal_ratios=None):
-        """前向逻辑：全程用缓存的rho（上一批）"""
+        """Apply sparse cross-modal interaction using cached ratios."""
         assert len(inputs) == self.num_modalities
         device = inputs[0].device
 
@@ -275,12 +269,7 @@ class InteractionExpert(nn.Module):
 
 # Specialized interaction mixture of experts
 class SpecializedInteractionMoE(nn.Module):
-    """
-    完整整合版：
-    - 替换原有交互模块为 AMSSControlledSparseDeltaCrossAttention
-    - 保留原有 MIR/AMSS/Fisher 逻辑
-    - 实现动态 topk_ratio + Delta 注入 + Token-wise Post-Gate
-    """
+    """Combine AMSS-controlled sparse interaction with specialized experts."""
 
     def __init__(
             self,
@@ -459,7 +448,7 @@ class SpecializedInteractionMoE(nn.Module):
         return wrapped_outputs, interaction_weights, weighted_preds, interaction_losses
 
     def apply_mi_fisher_after_backward(self, inputs, labels):
-        """计算rho后，更新交互模块的rho缓存（供下一批前向使用）"""
+        """Estimate modality ratios and cache them for the next batch."""
         if not self.amss_enabled:
             return {}
 
@@ -534,7 +523,7 @@ class SpecializedInteractionMoE(nn.Module):
         return stats
 
     def inference(self, inputs):
-        """推理阶段使用默认参数"""
+        """Run inference with the cached interaction settings."""
         if self.use_interaction and self.interaction_module is not None:
             enhanced_features = self.interaction_module(inputs, modal_ratios=None)
         else:

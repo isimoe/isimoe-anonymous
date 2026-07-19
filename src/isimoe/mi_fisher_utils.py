@@ -6,22 +6,17 @@ import math
 
 
 def modal_caculate_multi_mi(expert_outputs, expert_inputs, labels, temperature=1.0):
-    """
-    计算多模态互信息系数 (Multi-modal MI Coefficients)。
-    核心修改：将原expert_raw_logits替换为expert_inputs，基于输入特征计算模态熵。
+    """Estimate multimodal mutual-information coefficients.
 
     Args:
-        expert_outputs (List[Tensor]): 经过温度缩放或其他处理后的专家输出 logits (用于计算 Loss)。
-        expert_inputs (List[Tensor]): 模态的原始输入特征 (用于计算 Entropy)，支持形状：
-                                      - 2D: [Batch, Dim]
-                                      - 3D: [Batch, SeqLen, Dim]
-        labels (Tensor): 真实标签 [Batch, Classes] 或 [Batch]。
-        temperature (float): AMSS 的全局温度系数。
+        expert_outputs: Expert logits used to estimate predictive scores.
+        expert_inputs: Modality features shaped [batch, dim] or
+            [batch, sequence, dim].
+        labels: Targets shaped [batch, classes] or [batch].
+        temperature: Global AMSS temperature.
 
     Returns:
-        coeffs (Tensor): 每个模态的系数 [num_modalities]。
-        ratios (List[Tensor]): 每个模态的 MIR 比例 (Tensor类型，保持梯度)。
-        HY (Tensor): 标签的熵值
+        Modality coefficients, MIR values, and estimated label entropy.
     """
     num_modalities = len(expert_outputs)-1
     device = expert_outputs[0].device
@@ -114,10 +109,7 @@ def modal_caculate_multi_mi(expert_outputs, expert_inputs, labels, temperature=1
     return coeffs, ratios, HY
 
 def modal_caculate_multi_mi_regression(expert_outputs, labels, temperature=1.0):
-    """
-    回归任务专用：计算多模态显著性得分。
-    由于回归没有信息熵，我们使用负 MSE 作为 Score，并用误差的倒数作为 Ratio 的近似。
-    """
+    """Estimate regression significance using negative and inverse MSE."""
     num_modalities = len(expert_outputs)
     device = expert_outputs[0].device
 
@@ -154,14 +146,14 @@ def modal_caculate_multi_mi_regression(expert_outputs, labels, temperature=1.0):
     return coeffs, ratios
 
 def apply_fisher_freeze(attention_params, p_freeze):
-    """根据梯度 Fisher 估计，将前 ``p_freeze`` 个参数的梯度置零。
+    """Zero gradients with the largest Fisher proxies.
 
-    参数：
-        attention_params (list): 筛选后的注意力层可训练参数列表。
-        p_freeze (int): 需要冻结的参数元素数量。
+    Args:
+        attention_params: Selected trainable attention parameters.
+        p_freeze: Number of gradient elements to suppress.
 
-    返回：
-        frozen (int): 实际被置零的梯度元素数量。
+    Returns:
+        Number of gradient elements set to zero.
     """
     # Collect squared gradients from the selected attention parameters.
     grads = []

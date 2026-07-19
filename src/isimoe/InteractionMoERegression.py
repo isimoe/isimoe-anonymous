@@ -77,7 +77,7 @@ class InteractionExpert(nn.Module):
     def random_masking(self, x, ratio=0.80):
         """
         Randomly mask tokens in the input tensor.
-        ratio: 替换比例（0-1之间），控制要替换的token数量
+        The ratio controls the fraction of tokens to replace.
         """
         N, L, E = x.shape
         dim_feature = 2
@@ -450,9 +450,7 @@ class SpecializedInteractionMoERegression(nn.Module):
         )
 
     def apply_mi_fisher_after_backward(self, inputs, labels):
-        """
-        多模态回归适配：计算 N 个模态的显著性并应用 Fisher 掩码，同时更新交互模块的rho缓存。
-        """
+        """Apply regression-aware Fisher masking and update cached ratios."""
         if not self.amss_enabled:
             return {}
 
