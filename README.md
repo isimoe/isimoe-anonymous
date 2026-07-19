@@ -1,29 +1,8 @@
-# ISI-MoE: Adaptive Interaction-Aware Mixture-of-Experts for Multimodal Learning
-
-![Anonymous Review](https://img.shields.io/badge/review-anonymous-137f78)
-![Reproducibility](https://img.shields.io/badge/artifact-reproducibility--ready-111d2e)
-![GitHub Pages](https://img.shields.io/badge/site-GitHub%20Pages-dff472)
-![License: MIT](https://img.shields.io/badge/license-MIT-6b7280)
-
-Anonymous implementation and review artifact for **ISI-MoE**, an interaction-aware mixture-of-experts framework for heterogeneous and incomplete multimodal inputs.
-
-> **Double-blind review notice.** Author names, affiliations, personal accounts, contact details and identity-bearing links are intentionally omitted. Please do not add a citation or acknowledgements section until the review period has ended.
-
-- Project page: [https://isimoe.github.io/isimoe-anonymous/](https://isimoe.github.io/isimoe-anonymous/)
-- Reproduction guide: [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
-- Anonymous publishing guide: [`English`](PUBLISHING.md) · [`中文`](PUBLISHING_CN.md)
-- Reference scripts: [`scripts/train_scripts/isimoe/`](scripts/train_scripts/isimoe/)
+# ISI-MoE: Importance-Aware Sparse Interaction Mixture-of-Experts
 
 ## Overview
 
-Multimodal fusion must distinguish information that is unique to one modality from evidence that emerges through cross-modal interaction. ISI-MoE addresses this with four components:
-
-1. **Modality encoders** map heterogeneous inputs into a shared representation space.
-2. **Adaptive sparse delta cross-attention** selects informative context tokens and injects cross-modal residuals.
-3. **Modality-specialized and shared experts** separate modality-specific evidence from common multimodal evidence.
-4. **Sample-wise routing** combines expert outputs according to the evidence available for each example.
-
-The training implementation supports task, interaction, routing, auxiliary and orthogonality objectives. Each term is controlled by the supplied reference recipes.
+Multimodal fusion integrates heterogeneous modalities to improve prediction and reasoning beyond unimodal representations. However, multimodal collaboration is inherently asymmetric: different modalities contribute unequally across samples and require different interaction directions and strengths. Existing fusion methods often rely on dense or weakly controlled cross-modal interactions, which can introduce redundant information exchange and obscure modality-specific and synergistic information roles. To address this issue, we propose Importance-Aware Sparse Interaction Mixture-of-Experts (ISI-MoE), an interpretable framework for asymmetric multimodal collaboration. ISI-MoE estimates sample-level modality importance using the Mutual Information Rate (MIR) and introduces AMSS to dynamically calibrate modality-strength contributions across different training stages. The calibrated importance signal guides sparse incremental cross-attention for controllable token-level cross-modal exchange. Grounded in Partial Information Decomposition (PID), ISI-MoE further introduces S2IM to constrain expert discrepancies and enforce bidirectional alignment, encouraging experts to specialize in modality-specific and cross-modal synergistic information. Extensive experiments on four real-world multimodal datasets show that ISI-MoE achieves the best performance among compared methods while maintaining computational efficiency.
 
 ![ISI-MoE architecture](assets/ISI-MoE.png)
 
@@ -60,50 +39,44 @@ data/
     └── wireframes/
 ```
 
-See [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) for the exact file-level layout and access constraints.
+## Train Models
 
-## Train ISI-MoE
+### Train ISI-MoE models
 
-Supported fusion backbones include `transformer`, `interpretcc`, `moepp` and `switchgate`. Supported datasets include `adni`, `mmimdb`, `mosi`, `mosi_regression` and `enrico`.
+- Supported fusion methods: `<fusion>` in `transformer`, `interpretcc`, `moepp`, `switchgate`.
+- Supported datasets: `<dataset>` in `adni`, `mmimdb`, `mosi`, `mosi_regression`, `enrico`.
 
 ```shell
-# Example: Transformer backbone on CMU-MOSI
-python src/isimoe/train_transformer.py \
-  --data mosi \
-  --modality TVA \
-  --fusion_sparse False \
-  --amss_enabled True \
-  --seed 0
-
-# Reference sweep
-bash scripts/train_scripts/isimoe/transformer/run_amss_mosi.sh
+source scripts/train_scripts/isimoe/<fusion>/run_<dataset>.sh
 ```
 
-Logs, checkpoints, predictions, routing weights and MIR trajectories are written under `logs/`, `saves/` and `outputs/`.
+### Train vanilla fusion models
 
-## Baselines and ablations
+- Supported fusion methods: `<fusion>` in `transformer`, `interpretcc`, `moepp`, `switchgate`, `ef`, `lf`, `lrtf`.
+- Supported datasets: `<dataset>` in `adni`, `mmimdb`, `mosi`, `mosi_regression`, `enrico`.
 
-Baseline training entry points are under [`src/baseline/`](src/baseline/). Ablation implementations and launchers are under [`src/ablation/`](src/ablation/) and `scripts/train_scripts/`.
+```shell
+# For <fusion> in ["transformer", "interpretcc", "moepp", "switchgate"]
+python src/baseline/train_<fusion>.py --data <dataset> --modality <modalities>
 
-The release includes variants for:
+# For <fusion> in ["ef", "lf", "lrtf"]
+python src/baseline/train_<fusion>.py --data <dataset> --modality <modalities>
+```
 
-- no interaction loss;
-- a single interaction expert;
-- mean, zero-vector and random perturbation controls;
-- latent contrastive interaction;
-- synergy/redundancy-only objectives;
-- simplified expert aggregation.
+### Ablations of ISI-MoE
 
-## Anonymous artifact checklist
+- Supported datasets: `<dataset>` in `adni`, `mmimdb`, `mosi`, `mosi_regression`, `enrico`.
 
-- [x] No author names, affiliations, email addresses or personal repository links in the review landing page.
-- [x] No analytics, trackers or third-party fonts on the GitHub Pages site.
-- [x] Environment and dataset layouts are documented.
-- [x] Training commands, seeds and output locations are documented.
-- [ ] Re-run the identity scan immediately before submission.
-- [ ] Verify the final PDF and supplementary archive metadata separately.
-- [ ] Publish from an anonymous GitHub account or organization created only for review.
+```shell
+python src/ablation/train_latent_contrastive.py --data <dataset>
+python src/ablation/train_less_perturbed_forward.py --data <dataset>
+python src/ablation/train_synergy_redundancy_only.py --data <dataset>
+python src/ablation/train_simple_weighted_average.py --data <dataset>
+python src/ablation/train_no_interaction_loss.py --data <dataset>
+```
 
-## License and citation
+Logs, checkpoints and predictions are written under `logs/`, `saves/` and `outputs/`.
 
-The code is released under the [MIT License](LICENSE). Citation authorship and BibTeX are intentionally omitted from this anonymous draft; add them only after confirming that doing so is compatible with the double-blind review policy.
+## License
+
+The code is released under the [MIT License](LICENSE).

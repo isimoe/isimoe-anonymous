@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="description" content="Anonymous code and reproducibility artifact for ISI-MoE.">
-  <title>ISI-MoE | Anonymous Review Artifact</title>
+  <title>ISI-MoE | Project Page</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -17,17 +17,17 @@
       <a href="#data">Data</a>
       <a href="#reproduce">Reproduce</a>
     </nav>
-    <a class="small-button" href="./isimoe-anonymous-artifact.zip">Download code</a>
+    <a class="small-button" href="https://github.com/isimoe/isimoe-anonymous/archive/refs/heads/main.zip">Download code</a>
   </header>
 
   <main id="top">
     <section class="hero" id="overview">
       <div class="hero-copy">
         <p class="eyebrow"><span></span> Anonymous review artifact · v1.0</p>
-        <h1>Interaction-aware experts for <em>heterogeneous multimodal evidence.</em></h1>
-        <p class="lede">ISI-MoE combines adaptive sparse cross-modal interaction, modality-specialized experts and sample-wise routing to learn from diverse and incomplete inputs.</p>
+        <h1>Importance-aware sparse interaction for <em>asymmetric multimodal collaboration.</em></h1>
+        <p class="lede">ISI-MoE estimates sample-level modality importance with MIR, calibrates modality strength through AMSS, and uses S2IM to specialize experts in modality-specific and synergistic information.</p>
         <div class="hero-actions">
-          <a class="button primary" href="./isimoe-anonymous-artifact.zip">Download anonymous artifact <b>↓</b></a>
+          <a class="button primary" href="https://github.com/isimoe/isimoe-anonymous/archive/refs/heads/main.zip">Download code <b>↓</b></a>
           <a class="button ghost" href="#reproduce">Reproduce a run <b>→</b></a>
         </div>
         <p class="privacy-note">No author names, affiliations, analytics or identity-bearing repository links are included.</p>
@@ -59,7 +59,7 @@
 
     <section class="section" id="method">
       <p class="kicker">01 · Method</p>
-      <div class="section-intro"><h2>Interaction signals shape features and experts.</h2><p>The implementation separates cross-modal evidence discovery from expert prediction while keeping the pipeline end-to-end trainable.</p></div>
+      <div class="section-intro"><h2>Interaction signals shape features and experts.</h2><p>Multimodal collaboration is asymmetric: different modalities contribute unequally across samples and require different interaction directions and strengths. ISI-MoE combines MIR, AMSS, sparse incremental cross-attention and PID-grounded S2IM in an end-to-end framework.</p></div>
       <div class="features">
         <article><span>A</span><h3>Adaptive sparse interaction</h3><p>Cross-attention retains a modality-specific subset of context tokens, then injects cross-modal residual evidence.</p></article>
         <article><span>B</span><h3>Specialized + shared experts</h3><p>Specialists model modality-dependent evidence while a shared expert preserves information useful across inputs.</p></article>
@@ -81,7 +81,7 @@
 
     <section class="section" id="reproduce">
       <p class="kicker">03 · Reproduce</p>
-      <div class="section-intro"><h2>From download to a reference run.</h2><p>The archive contains the environment, data tree, source code, launchers and review checklist. Run all commands from the repository root.</p></div>
+      <div class="section-intro"><h2>From download to a reference run.</h2><p>Download the repository source, prepare the licensed datasets and run all commands from the repository root.</p></div>
       <div class="repro-grid">
         <ol class="steps">
           <li><span>01</span><div><h3>Create the environment</h3><p>Install the pinned packages in a clean Python 3.10 environment.</p></div></li>
@@ -91,8 +91,8 @@
         </ol>
         <div class="terminal">
           <div class="terminal-head"><i></i><i></i><i></i><span>reference run</span></div>
-          <pre><code>unzip isimoe-anonymous-artifact.zip
-cd isimoe-anonymous-artifact
+          <pre><code>unzip isimoe-anonymous-main.zip
+cd isimoe-anonymous-main
 
 conda create -n isimoe python=3.10 -y
 conda activate isimoe
@@ -104,7 +104,7 @@ python src/isimoe/train_transformer.py \
   --fusion_sparse False \
   --amss_enabled True \
   --seed 0</code></pre>
-          <p>See <code>REPRODUCIBILITY.md</code> for all required files and commands.</p>
+          <p>See <code>README.md</code> for the data layout and reference commands.</p>
         </div>
       </div>
     </section>

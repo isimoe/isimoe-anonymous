@@ -15,3 +15,6 @@ venv/
 .env
 website/
 .artifact-backup/
+/PUBLISHING.md
+/PUBLISHING_CN.md
+/REPRODUCIBILITY.md

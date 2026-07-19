@@ -423,7 +423,6 @@ class SpecializedInteractionMoE(nn.Module):
             gate_losses.append(g_loss_s)
         else:
             out_s = self.shared_expert.forward(inputs)
-        # out_s = torch.zeros_like(out_s)
         expert_outputs.append(out_s)
         expert_features.append(self.shared_expert.last_latent)
 
@@ -477,7 +476,6 @@ class SpecializedInteractionMoE(nn.Module):
             labels=labels,
             temperature=self.amss_tau
         )
-        # print("ratios:", ratios)
         # 2. 截取独特专家比例（原有逻辑）
         if isinstance(ratios, (list, tuple)):
             unique_ratios = ratios[:self.num_modalities]
@@ -493,7 +491,6 @@ class SpecializedInteractionMoE(nn.Module):
                     torch.full((self.num_modalities - len(unique_ratios),), pad_val,
                                device=unique_ratios.device, dtype=unique_ratios.dtype)
                 ])
-        # print("unique_ratios:", unique_ratios)
         # 3. 更新主模型动量（原有逻辑）
         shared_ratio = ratios[-1] if len(ratios) > 0 else 0.0
         if isinstance(unique_ratios, list):
@@ -504,29 +501,21 @@ class SpecializedInteractionMoE(nn.Module):
                 unique_ratios,
                 torch.tensor([shared_ratio], device=unique_ratios.device)
             ], dim=0)
-        # print("current_ratios_tensor", current_ratios_tensor)
         m = self.amss_momentum
-        # if self.u_mom.numel() != len(current_ratios_tensor):
-        #     self.u_mom = torch.zeros(len(current_ratios_tensor), device=self.u_mom.device)
         current_val = current_ratios_tensor.clone().detach().to(self.u_mom.device)
         self.u_mom.mul_(m).add_((1.0 - m) * current_val)
         s = torch.softmax(self.u_mom / self.amss_tau, dim=0)
 
-        # print("s",s)
         # 4. 计算rho_m0/rho_m1（原有逻辑）
         rho_list = []
         stats = {}
-        # print("unique_ratios",unique_ratios)
         for i in range(self.num_modalities):
-            # rho = float(1.0 - s[i] * self.scale_factor) if i < len(s) else 0.5
             rho=1.0-ratios[i]
             rho = max(0.1, min(rho, 1.0))
-            # print("rho",rho)
             rho_list.append(rho)  # 收集当前批次的rho
             stats[f"mir_m{i}"] = ratios[i]
             stats[f"rho_m{i}"] = rho
             stats[f"score_m{i}"] = scores[i] if i < len(scores) else 0.0
-        # print("rho_list", rho_list)
         # ========== 核心修改：更新交互模块的rho缓存（供下一批用） ==========
         if self.use_interaction and self.interaction_module is not None:
             # 关键：更新缓存
@@ -565,7 +554,6 @@ class SpecializedInteractionMoE(nn.Module):
         out_s = self.shared_expert.forward(inputs)
         if isinstance(out_s, (tuple, list)):
             out_s = out_s[0]
-        # out_s = torch.zeros_like(out_s)
         expert_outputs.append(out_s)
 
         if self.enable_r_path:

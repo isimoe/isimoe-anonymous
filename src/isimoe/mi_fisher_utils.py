@@ -113,7 +113,6 @@ def modal_caculate_multi_mi(expert_outputs, expert_inputs, labels, temperature=1
         coeffs = torch.stack(coeffs)
 
     # 调试打印
-    # print("ratios:", [r.item() if isinstance(r, torch.Tensor) else r for r in ratios])
     return coeffs, ratios, HY
 
 def modal_caculate_multi_mi_regression(expert_outputs, labels, temperature=1.0):
@@ -156,20 +155,19 @@ def modal_caculate_multi_mi_regression(expert_outputs, labels, temperature=1.0):
     # 防止单模态情况下除以 0
     denom = sum_exp * (num_modalities - 1) if num_modalities > 1 else sum_exp
     coeffs = (sum_exp - exp_t) / (denom + 1e-8)
-    # print("ratios", ratios)
     return coeffs, ratios
 
 def apply_fisher_freeze(attention_params, p_freeze):
-    """Freeze (zero gradients) of top-p_freeze parameters based on gradient-based Fisher estimate.
-    适配修改：入参改为Attention层参数列表，而非整个模块，仅冻结传入的参数梯度
-    Args:
-        attention_params (list): 筛选后的Attention层可训练参数列表 [param1, param2, ...]
-        p_freeze (int): number of parameter elements to freeze (set grad to zero)
+    """根据梯度 Fisher 估计，将前 ``p_freeze`` 个参数的梯度置零。
 
-    Returns:
-        frozen (int): number of parameters whose gradients were zeroed
+    参数：
+        attention_params (list): 筛选后的注意力层可训练参数列表。
+        p_freeze (int): 需要冻结的参数元素数量。
+
+    返回：
+        frozen (int): 实际被置零的梯度元素数量。
     """
-    # gather grad-squares：直接遍历传入的Attention参数列表，而非模块
+    # 收集梯度平方：直接遍历传入的注意力参数列表，而不是整个模块
     grads = []
     valid_params = []  # 仅保留有梯度的Attention参数
     for p in attention_params:
@@ -187,16 +185,16 @@ def apply_fisher_freeze(attention_params, p_freeze):
     if p_freeze == 0:
         return 0
 
-    # top indices：取梯度平方最大的p_freeze个参数，置0梯度（原核心逻辑不变）
+    # 选取梯度平方最大的 p_freeze 个参数元素
     _, idx = torch.topk(all_grads, p_freeze)
 
-    # Now zero corresponding gradients across Attention parameters
+    # 在各注意力参数张量中将对应梯度置零
     cur = 0
     frozen = 0
     for p in valid_params:
         g = p.grad.view(-1)
         n = g.numel()
-        # indices in this param that should be zeroed
+        # 当前参数张量内需要置零的相对索引
         rel_idx = idx[(idx >= cur) & (idx < cur + n)] - cur
         if rel_idx.numel() > 0:
             g[rel_idx] = 0.0
@@ -204,49 +202,3 @@ def apply_fisher_freeze(attention_params, p_freeze):
         cur += n
 
     return frozen
-
-# def apply_fisher_freeze(expert_module, p_freeze):
-#     """Freeze (zero gradients) of top-p_freeze parameters based on gradient-based Fisher estimate.
-#
-#     Args:
-#         expert_module (nn.Module): expert whose parameters to consider
-#         p_freeze (int): number of parameter elements to freeze (set grad to zero)
-#
-#     Returns:
-#         frozen (int): number of parameters whose gradients were zeroed
-#     """
-#     # gather grad-squares
-#     grads = []
-#     params = []
-#     for p in expert_module.parameters():
-#         if p.grad is None:
-#             continue
-#         grads.append((p.grad.detach() ** 2).view(-1))
-#         params.append(p)
-#
-#     if len(grads) == 0:
-#         return 0
-#
-#     all_grads = torch.cat(grads)
-#     total = all_grads.numel()
-#     p_freeze = min(max(0, int(p_freeze)), total)
-#     if p_freeze == 0:
-#         return 0
-#
-#     # top indices
-#     _, idx = torch.topk(all_grads, p_freeze)
-#
-#     # Now zero corresponding gradients across parameters
-#     cur = 0
-#     frozen = 0
-#     for p in params:
-#         g = p.grad.view(-1)
-#         n = g.numel()
-#         # indices in this param that should be zeroed
-#         rel_idx = idx[(idx >= cur) & (idx < cur + n)] - cur
-#         if rel_idx.numel() > 0:
-#             g[rel_idx] = 0.0
-#             frozen += rel_idx.numel()
-#         cur += n
-#
-#     return frozen

@@ -210,7 +210,6 @@ class AMSSControlledSparseDeltaCrossAttention(nn.Module):
 
 
         target_sum = 1.5
-        # print("target_sum", target_sum)
         topk_ratios_scaled = topk_ratios_normalized * target_sum
         topk_ratios_scaled = torch.clamp(topk_ratios_scaled, min=0.1, max=1.0)
         topk_ratios = topk_ratios_scaled
