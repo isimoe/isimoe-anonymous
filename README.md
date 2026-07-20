@@ -14,8 +14,6 @@ conda activate isimoe
 pip install -r requirements.txt
 ```
 
-The core Transformer path can run without sparse fusion. FasterMoE is required only when `--fusion_sparse True`; follow its CUDA-specific installation notes for that configuration.
-
 ## Data Directory
 
 Create a data directory under `./data`.
